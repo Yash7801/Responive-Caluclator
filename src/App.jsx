@@ -1,71 +1,71 @@
 import { useState, useEffect, useCallback } from 'react'
-import Display from './components/Display'
-import ButtonGrid from './components/ButtonGrid'
-import HistoryPanel from './components/HistoryPanel'
+import CalculatorScreen from './components/CalculatorScreen'
+import Keypad from './components/Keypad'
+import CalculationHistory from './components/CalculationHistory'
 
 function App() {
-  const [current,     setCurrent]     = useState('0')
-  const [previous,    setPrevious]    = useState(null)
-  const [operator,    setOperator]    = useState(null)
-  const [expression,  setExpression]  = useState('')
-  const [freshResult, setFreshResult] = useState(false)
-  const [history,     setHistory]     = useState([])
-  const [historyOpen, setHistoryOpen] = useState(false)
-  const [theme,       setTheme]       = useState('dark')
+  const [displayValue, setDisplayValue] = useState('0')
+  const [storedValue, setStoredValue] = useState(null)
+  const [currentOp, setCurrentOp] = useState(null)
+  const [calcDisplay, setCalcDisplay] = useState('')
+  const [justCalculated, setJustCalculated] = useState(false)
+  const [pastResults, setPastResults] = useState([])
+  const [showHistory, setShowHistory] = useState(false)
+  const [colorMode, setColorMode] = useState('dark')
 
-  const isDark = theme === 'dark'
+  const darkMode = colorMode === 'dark'
 
-  function inputNumber(digit) {
-  if (current === 'Error') {
-    setCurrent(digit)
-    setFreshResult(false)
+  function handleNumber(digit) {
+  if (displayValue === 'Error') {
+    setDisplayValue(digit)
+    setJustCalculated(false)
     return
   }
 
-  if (freshResult) {
-    setCurrent(digit)
-    setFreshResult(false)
+  if (justCalculated) {
+    setDisplayValue(digit)
+    setJustCalculated(false)
     return
   }
 
-  setCurrent(prev => prev === '0' ? digit : prev + digit)
+  setDisplayValue(prev => prev === '0' ? digit : prev + digit)
 }
 
-  function inputDecimal() {
-    if (current === 'Error') return
-    if (current.includes('.')) return
-    setCurrent(prev => prev + '.')
+  function handleDecimal() {
+    if (displayValue === 'Error') return
+    if (displayValue.includes('.')) return
+    setDisplayValue(prev => prev + '.')
   }
 
-  function inputOperator(op) {
-  if (current === 'Error') return
+  function setOperator(op) {
+  if (displayValue === 'Error') return
 
-  if (operator && !freshResult) {
-    setOperator(op)
-    setExpression(`${previous} ${op}`)
+  if (currentOp && !justCalculated) {
+    setCurrentOp(op)
+    setCalcDisplay(`${storedValue} ${op}`)
     return
   }
 
-  setExpression(`${current} ${op}`)
-  setPrevious(current)
-  setOperator(op)
-  setCurrent('0')
-  setFreshResult(false)
+  setCalcDisplay(`${displayValue} ${op}`)
+  setStoredValue(displayValue)
+  setCurrentOp(op)
+  setDisplayValue('0')
+  setJustCalculated(false)
 }
 
-  function inputEquals() {
-    if (!operator || !previous || current === 'Error') return
+  function calculate() {
+    if (!currentOp || !storedValue || displayValue === 'Error') return
 
-    const a = parseFloat(previous)
-    const b = parseFloat(current)
+    const a = parseFloat(storedValue)
+    const b = parseFloat(displayValue)
     let result
 
-    if (operator === '+') result = a + b
-    if (operator === '−') result = a - b
-    if (operator === '×') result = a * b
-    if (operator === '÷') result = b === 0 ? 'Error' : a / b
+    if (currentOp === '+') result = a + b
+    if (currentOp === '−') result = a - b
+    if (currentOp === '×') result = a * b
+    if (currentOp === '÷') result = b === 0 ? 'Error' : a / b
 
-    const expr = `${previous} ${operator} ${current}`
+    const expr = `${storedValue} ${currentOp} ${displayValue}`
     const formatted =
   result === 'Error'
     ? 'Error'
@@ -73,83 +73,83 @@ function App() {
     ? String(result)
     : String(parseFloat(result.toFixed(10)))
 
-    setHistory(prev => [...prev, { expr, result: formatted }])
-    setExpression(`${expr} =`)
-    setCurrent(formatted)
-    setPrevious(null)
-    setOperator(null)
-    setFreshResult(true)
+    setPastResults(prev => [...prev, { expr, result: formatted }])
+    setCalcDisplay(`${expr} =`)
+    setDisplayValue(formatted)
+    setStoredValue(null)
+    setCurrentOp(null)
+    setJustCalculated(true)
   }
 
-  function allClear() {
-    setCurrent('0')
-    setPrevious(null)
-    setOperator(null)
-    setExpression('')
-    setFreshResult(false)
+  function clearAll() {
+    setDisplayValue('0')
+    setStoredValue(null)
+    setCurrentOp(null)
+    setCalcDisplay('')
+    setJustCalculated(false)
   }
 
-  function backspace() {
-  if (freshResult || current === 'Error') {
-    allClear()
+  function deleteLast() {
+  if (justCalculated || displayValue === 'Error') {
+    clearAll()
     return
   }
 
-  setCurrent(prev => prev.length <= 1 ? '0' : prev.slice(0, -1))
+  setDisplayValue(prev => prev.length <= 1 ? '0' : prev.slice(0, -1))
 }
 
-  function percent() {
-    if (current === 'Error') return
-    setCurrent(prev => String(parseFloat(prev) / 100))
+  function calculatePercent() {
+    if (displayValue === 'Error') return
+    setDisplayValue(prev => String(parseFloat(prev) / 100))
   }
 
-  function sqrt() {
-  if (current === 'Error') return
+  function calculateSquareRoot() {
+  if (displayValue === 'Error') return
 
-  const val = parseFloat(current)
-  if (val < 0) { setCurrent('Error'); return }
+  const val = parseFloat(displayValue)
+  if (val < 0) { setDisplayValue('Error'); return }
 
-  setExpression(`√(${current})`)
-  setCurrent(String(parseFloat(Math.sqrt(val).toPrecision(12))))
-  setFreshResult(true)
+  setCalcDisplay(`√(${displayValue})`)
+  setDisplayValue(String(parseFloat(Math.sqrt(val).toPrecision(12))))
+  setJustCalculated(true)
 }
 
-  function square() {
-    if (current === 'Error') return
-    const val = parseFloat(current)
-    setExpression(`(${current})²`)
-    setCurrent(String(parseFloat((val * val).toPrecision(12))))
-    setFreshResult(true)
+  function calculateSquare() {
+    if (displayValue === 'Error') return
+    const val = parseFloat(displayValue)
+    setCalcDisplay(`(${displayValue})²`)
+    setDisplayValue(String(parseFloat((val * val).toPrecision(12))))
+    setJustCalculated(true)
   }
 
-  function inverse() {
-    if (current === 'Error') return
-    const val = parseFloat(current)
-    if (val === 0) { setCurrent('Error'); return }
-    setExpression(`1/(${current})`)
-    setCurrent(String(parseFloat((1 / val).toPrecision(12))))
-    setFreshResult(true)
+  function calculateInverse() {
+    if (displayValue === 'Error') return
+    const val = parseFloat(displayValue)
+    if (val === 0) { setDisplayValue('Error'); return }
+    setCalcDisplay(`1/(${displayValue})`)
+    setDisplayValue(String(parseFloat((1 / val).toPrecision(12))))
+    setJustCalculated(true)
   }
 
-  function toggleSign() {
-    if (current === '0' || current === 'Error') return
-    setCurrent(prev => prev.startsWith('-') ? prev.slice(1) : '-' + prev)
+  function changeSign() {
+    if (displayValue === '0' || displayValue === 'Error') return
+    setDisplayValue(prev => prev.startsWith('-') ? prev.slice(1) : '-' + prev)
   }
 
   const handleAction = useCallback((action, value) => {
-  if (action === 'number')    inputNumber(value)
-  if (action === 'decimal')   inputDecimal()
-  if (action === 'operator')  inputOperator(value)
-  if (action === 'equals')    inputEquals()
-  if (action === 'allclear')  allClear()
-  if (action === 'backspace') backspace()
-  if (action === 'percent')   percent()
-  if (action === 'sqrt')      sqrt()
-  if (action === 'square')    square()
-  if (action === 'inverse')   inverse()
-  if (action === 'sign')      toggleSign()
-  if (action === 'history')   setHistoryOpen(prev => !prev)
-}, [current, operator, previous, freshResult])
+  if (action === 'number')    handleNumber(value)
+  if (action === 'decimal')   handleDecimal()
+  if (action === 'operator')  setOperator(value)
+  if (action === 'equals')    calculate()
+  if (action === 'allclear')  clearAll()
+  if (action === 'backspace') deleteLast()
+  if (action === 'percent')   calculatePercent()
+  if (action === 'sqrt')      calculateSquareRoot()
+  if (action === 'square')    calculateSquare()
+  if (action === 'inverse')   calculateInverse()
+  if (action === 'sign')      changeSign()
+  if (action === 'history')   setShowHistory(prev => !prev)
+}, [displayValue, currentOp, storedValue, justCalculated])
 
   useEffect(() => {
   function handleKey(e) {
@@ -190,34 +190,34 @@ function App() {
 }, [handleAction])
 
   return (
-    <div className={`min-h-screen flex flex-col items-center justify-start pt-6 sm:pt-10 p-2 sm:p-4 transition-colors duration-300 ${isDark ? 'bg-[#0e0f14]' : 'bg-[#e8eaf0]'}`}>
-      <h1 className={`text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 tracking-wide text-center transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:drop-shadow-lg cursor-default ${isDark ? 'text-white hover:text-violet-300' : 'text-gray-900 hover:text-violet-600'}`}>
+    <div className={`min-h-screen flex flex-col items-center justify-start pt-6 sm:pt-10 p-2 sm:p-4 transition-colors duration-300 ${darkMode ? 'bg-[#0e0f14]' : 'bg-[#e8eaf0]'}`}>
+      <h1 className={`text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 tracking-wide text-center transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:drop-shadow-lg cursor-default ${darkMode ? 'text-white hover:text-violet-300' : 'text-gray-900 hover:text-violet-600'}`}>
         Calculator
       </h1>
 
       <button
-        onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+        onClick={() => setColorMode(t => t === 'dark' ? 'light' : 'dark')}
         className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 w-8 h-8 sm:w-10 sm:h-10 rounded-full border flex items-center justify-center text-sm sm:text-lg transition-all duration-200 hover:scale-110 hover:rotate-12 bg-white/10 border-white/10"
       >
-        {isDark ? '☀️' : '🌙'}
+        {darkMode ? '☀️' : '🌙'}
       </button>
 
       <div className="flex flex-col md:flex-row mt-2 sm:mt-4 gap-2 sm:gap-3 items-center w-full max-w-[400px] md:max-w-[1000px]">
 
-        {historyOpen && (
-  <HistoryPanel
-    history={history}
-    isOpen={historyOpen}
-    isDark={isDark}
-    onClose={() => setHistoryOpen(false)}
-    onRecall={(result) => { setCurrent(result); setFreshResult(true) }}
-    onClear={() => setHistory([])}
+        {showHistory && (
+  <CalculationHistory
+    history={pastResults}
+    isOpen={showHistory}
+    isDark={darkMode}
+    onClose={() => setShowHistory(false)}
+    onRecall={(result) => { setDisplayValue(result); setJustCalculated(true) }}
+    onClear={() => setPastResults([])}
   />
 )}
 
-        <main className={`w-full md:flex-1 rounded-xl sm:rounded-2xl overflow-hidden border shadow-xl sm:shadow-2xl transition-colors duration-300 ${isDark ? 'bg-[#16181f] border-white/5' : 'bg-white border-black/8'}`}>
-          <Display expression={expression} result={current} isDark={isDark} />
-          <ButtonGrid onAction={handleAction} isDark={isDark} />
+        <main className={`w-full md:flex-1 rounded-xl sm:rounded-2xl overflow-hidden border shadow-xl sm:shadow-2xl transition-colors duration-300 ${darkMode ? 'bg-[#16181f] border-white/5' : 'bg-white border-black/8'}`}>
+          <CalculatorScreen expression={calcDisplay} result={displayValue} isDark={darkMode} />
+          <Keypad onAction={handleAction} isDark={darkMode} />
         </main>
 
       </div>
